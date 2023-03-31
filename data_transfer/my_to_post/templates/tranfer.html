@@ -1,0 +1,11 @@
+<html>
+    <head>
+        <title>Data Transfer</title>
+    </head>
+    <body>
+        <form action="{% url 'import_data' %}" method = "post">
+            {% csrf_token %}
+            <button type="submit">Import data</button>
+        </form>
+    </body>
+</html>
