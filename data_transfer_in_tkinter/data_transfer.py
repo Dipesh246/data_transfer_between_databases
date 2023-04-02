@@ -1,21 +1,19 @@
 from tkinter import *
-
-from tkinter.ttk import *
-from connection import connect_mysql,connect_postgre
+from import_data import import_data
+from tkinter import messagebox
 
 root = Tk()
 
 root.title("Transfer data from MySQL to PostgreSQL")
 
 root.geometry('300x300')
+def data():
+    import_data()
+    
+    messagebox.showinfo('Success', 'Data imported successfully!')
 
-def import_data():
-    src_db = connect_mysql()
-    dest_db = connect_postgre()
+btn = Button(root, text='Import', command=data)
 
-
-
-btn = Button(root, text='Import', command=import_data())
 
 
 
