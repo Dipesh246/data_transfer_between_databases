@@ -1,39 +1,57 @@
 import datetime
+from psycopg2 import Error
+
 
 from connection import connect_mysql,connect_postgre
 
-def import_data():
+def import_mysql_data():
     src_db = connect_mysql()
-    dest_db = connect_postgre()
+    
 
     src_db.autocommit= True
-    dest_db.autocommit=True
+    
 
     with src_db.cursor() as cur:
 
-        cur.execute("SELECT * FROM gl_usma_usermain")
+        cur.execute("SELECT tile_titleid,tile_titlenameshort,tile_titlename,tile_createddatead,tile_createddatebs FROM gl_tile_title")
         data = cur.fetchall()
-        # print(data)
+        print(len(data),data)
         cur.close()
 
         
     src_db.close()
+    return data
+def export_mysql_data(src_data):
+    dest_db = connect_postgre()
+    dest_db.autocommit=True
 
-    with dest_db.cursor() as cur:
-        for d in data:
-            # print("\n",d)
-            a = list(d) 
-            a[-4] += a[-2]
-            # print(a[-4])
-            a[-4] =  datetime.datetime.strptime(a[-4], "%Y-%m-%d%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-            # print(a[-4])
-            a[-2] = a[2]+''+a[3]
-            a[-5] = bool(a[-5])
-            # print(a)
-            del(a[5],a[5],a[5],a[6],a[7])
-            # del[a[5],a[7]]
-            print(a)
+    # src_data = import_msql_data()
+    try:
+        with dest_db.cursor() as cur:
+            # d= list(src_data)
+            # del(d[0])
+            # print(d)
+        
+            cur.execute('''INSERT INTO dummy_data(id,title, name, date_ad, date_bs)
+                            VALUES(%s,%s,%s,%s,%s)''',src_data)
 
-            query = """INSERT INTO branch_khasauliphc.base_app_user(id, user_name, first_name, middle_name, last_name, email,  password, is_superuser, gender, is_real_dob, pan_vat_no, photo, active, created_date_ad, created_date_bs, is_staff, is_email_verified, full_name, created_by_id)
-                        VALUES(%s,%s,%s,'',%s,%s,%s,false,'',true,'',%s,%s,%s,%s,true,true,%s,%s)"""
-            cur.execute(query,a)
+    except Error as e:
+        dest_db.rollback()
+        return e
+        
+
+        # for data in src_data:
+        #     # a= list(d)
+        #     # a[4] = a[4]+a[6]
+        #     # print("\n",a)
+        #     # a[4] = datetime.datetime.strptime(a[4],"%Y-%m-%d%H:%M:%S").strftime("%Y/%m/%d %H:%M:%S")
+        #     # del a[-2]
+        #     # a[3] = bool(a[3])
+            
+        #     # print("\n",a)
+            
+        #     cur.execute('''INSERT INTO dummy_data(id,title, name, date_ad, date_bs)
+        #                     VALUES(%s,%s,%s,%s,%s)''',data)
+
+        cur.close()
+        dest_db.close()  

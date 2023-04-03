@@ -3,7 +3,7 @@ import mysql.connector
 
 def connect_postgre():
     conn= psycopg2.connect(
-        dbname='phl_cims',
+        dbname='test',
         host='localhost',
         user='postgres', 
         password='admin',
