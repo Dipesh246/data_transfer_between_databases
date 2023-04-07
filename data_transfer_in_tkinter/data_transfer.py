@@ -51,8 +51,8 @@ def transfer_data():
     rows = len(data)
     # print(data)
     current_row = 0
-
-    for d in data[3:]:
+    e =None
+    for d in data:
         # print(d)
         e = dh.export_mysql_data(d)
         if not e:
