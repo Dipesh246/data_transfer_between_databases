@@ -26,6 +26,7 @@ class Databasehandler:
             cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'branch_khasauliphc'")  
             tables=cur.fetchall()
 
+            
         cur.close()
         db.close()
         return tables      
@@ -37,8 +38,10 @@ class Databasehandler:
         with src_db.cursor() as cur:
             cur.execute(f"SELECT column_name FROM information_schema.columns WHERE (table_schema='phl_cims') AND (table_name = '{self.src_table}') ORDER BY ordinal_position; ")
             pk = cur.fetchall()[0]
+
+            query = f"""SELECT * FROM {self.src_table} WHERE is_migrated=false ORDER BY {pk[0]} ;"""
             
-            cur.execute(f"SELECT * FROM {self.src_table} ORDER BY {pk[0]} ")
+            cur.execute(query)
             data = cur.fetchall()
             
             src_db.commit()
@@ -50,7 +53,8 @@ class Databasehandler:
         dest_db = connect_postgre()
         # print('called')
         dest_db.autocommit=False
-        # src_data = import_msql_data()
+        src_db = connect_mysql()
+        mcur= src_db.cursor()
         
         try:
             with dest_db.cursor() as cur:
@@ -141,7 +145,7 @@ class Databasehandler:
                 elif(self.dest_table=='clinic_setup_referrer'):
                     a= list(src_data)
                     a[3] = a[3]+a[5]
-                    b =a[1].split(" ")
+                    
                     # print("\n",b)
                     
                     # print(a[1].replace(" ",""))
@@ -156,24 +160,41 @@ class Databasehandler:
                                     VALUES({a[0]},'{a[3]}','{a[4]}',0.00,0.00,1,{a[6]},1,{fk})""")
                     
                 
-                elif(self.dest_table=='clinic_setup_referrer'):
+                elif(self.dest_table=='customer_customer'):
                     a= list(src_data)
-                    a[3] = a[3]+a[5]
-                    b =a[1].split(" ")
+                    # a = [None if x==0 else x for x in a]
+                    yerad=int(a[20][1:4])
+                    yerbs=int(a[21][1:4])
+                    mnth=int(a[20][4:7]) 
+                    if mnth >= 4:
+                        fiscalbs=f"{yerbs}/{yerbs+1}"
+                        fiscalad=f"{yerad}/{yerad+1}"
+           
+                    else:
+                        fiscalbs =f"{yerbs-1}/{yerbs}"
+                        fiscalad =f"{yerad-1}/{yerad}"
+
+                    a[20] = a[20]+a[22]
+                    
+                    
                     # print("\n",b)
                     
                     # print(a[1].replace(" ",""))
                     
-                    a[3] = datetime.datetime.strptime(a[3],"%Y-%m-%d%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-                    cur.execute(f"""INSERT INTO branch_khasauliphc.base_app_user(user_name, first_name, middle_name, last_name, email,password,is_superuser,gender,is_real_dob,pan_vat_no,photo,active,created_date_ad,created_date_bs,is_staff,is_email_verified,full_name,created_by_id)
-                                VALUES('{a[1][6:].replace(" ",".")}{a[0]}','{a[1]}','','','','password',false,'',true,'','','{bool(a[2])}','{a[3]}','{a[4]}',true,true,'{a[1]}',{a[6]})
+                    a[20] = datetime.datetime.strptime(a[20],"%Y-%m-%d%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+                    cur.execute(f"""INSERT INTO branch_khasauliphc.base_app_user(user_name, first_name, middle_name, last_name, email,password,is_superuser,gender,is_real_dob,pan_vat_no,photo,active,created_date_ad,created_date_bs,is_staff,is_email_verified,full_name,created_by_id,mobile_no,phone_no,dob_date_ad,dob_date_bs,person_title_id)
+                                VALUES('{a[2]}{a[0]}','{a[2]}','{a[3]}','{a[4]}','{a[9]}','password',false,'{a[5]}',true,'{a[10]}','','{bool(a[19])}','{a[20]}','{a[21]}',true,true,'{a[2]} {a[3]} {a[4]}',{a[23]},'{a[7]}','{a[8]}','{a[16]}','{a[17]}','{a[1]}')
                                 RETURNING id""")
                     fk=cur.fetchone()[0]
-                    print(fk)
-                    cur.execute(f"""INSERT INTO branch_khasauliphc.clinic_setup_referrer(id,created_date_ad,created_date_bs,commission_rate,commission_amount,app_type_id,created_by_id,device_type_id,user_id)
-                                    VALUES({a[0]},'{a[3]}','{a[4]}',0.00,0.00,1,{a[6]},1,{fk})RETURNING id""")
-                    pk = cur.fetchone()[0]
-                    return pk
+                    # print(fk)
+                    cur.execute(f"""INSERT INTO branch_khasauliphc.customer_customer(id,created_date_ad,created_date_bs,prefix,separator,fiscal,customer_no,customer_no_full,direct_customer,plain_password,walk_in,marital_status,camera_photo,app_type_id,created_by_id,customer_type_id,department_id,device_type_id,doctor_id,fiscal_session_ad_id,fiscal_session_bs_id,user_id)
+                                    SELECT {a[0]},'{a[20]}','{a[21]}','','','{fiscalbs}',{a[0]},'{a[0]}',{bool(a[18])},'password',false,'n/a','',1,{a[23]},1,CAST(NULLIF({a[13]},0) AS integer),1,CAST(NULLIF({a[14]},0) AS integer),core_app_fiscalsessionad.id,core_app_fiscalsessionbs.id,{fk}
+                                    FROM branch_khasauliphc.core_app_fiscalsessionad,branch_khasauliphc.core_app_fiscalsessionbs
+                                    WHERE core_app_fiscalsessionad.session_short= '{fiscalad}' AND core_app_fiscalsessionbs.session_short='{fiscalbs}';""")
+                    
+                    mcur.execute(f"UPDATE {self.src_table} SET is_migrated=true WHERE cuer_customerid={a[0]}")
+                    
+                    
                     
 
                     

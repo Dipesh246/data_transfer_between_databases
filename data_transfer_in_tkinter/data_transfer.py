@@ -7,6 +7,7 @@ mysql_tables = Databasehandler.mysql_tables()
 
 post_tables = Databasehandler.postgresql_tables()
 
+
 root = Tk()
 root.title("Transfer data from MySQL to PostgreSQL")
 
